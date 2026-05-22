@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${inter.className} bg-background text-text-main flex flex-col md:flex-row min-h-screen`}>
+      <body suppressHydrationWarning className={`${inter.className} bg-background text-text-main flex flex-col md:flex-row min-h-screen`}>
         <Navigation />
 
         {/* Main Content */}
