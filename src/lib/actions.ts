@@ -95,6 +95,15 @@ export async function getTasks() {
   });
 }
 
+export async function getTask(id: string) {
+  return await prisma.task.findFirst({
+    where: { id },
+    include: {
+      subTasks: true,
+    },
+  });
+}
+
 export async function createTask(data: {
   title: string;
   description?: string;
@@ -123,6 +132,68 @@ export async function createTask(data: {
 
   revalidatePath("/");
   revalidatePath("/tasks");
+}
+
+export async function updateTask(
+  id: string,
+  data: {
+    title: string;
+    description?: string;
+    amount: number;
+    deadline?: string;
+    categoryId: string;
+    subTasks: { id?: string; title: string; isCompleted?: boolean }[];
+  }
+) {
+  if (!data.title) return { error: "Tiêu đề công việc không được để trống" };
+  if (!data.categoryId) return { error: "Vui lòng chọn hạng mục" };
+
+  // 1. Find existing subtasks
+  const existingSubTasks = await prisma.subTask.findMany({ where: { taskId: id } });
+  
+  // 2. Identify subtasks to delete
+  const incomingIds = data.subTasks.map(st => st.id).filter(Boolean) as string[];
+  const toDelete = existingSubTasks.filter(st => !incomingIds.includes(st.id));
+  
+  if (toDelete.length > 0) {
+    await prisma.subTask.deleteMany({
+      where: { id: { in: toDelete.map(st => st.id) } },
+    });
+  }
+
+  // 3. Update & create subtasks
+  for (const st of data.subTasks) {
+    if (st.id) {
+      await prisma.subTask.update({
+        where: { id: st.id },
+        data: { title: st.title, isCompleted: st.isCompleted ?? false },
+      });
+    } else {
+      await prisma.subTask.create({
+        data: {
+          title: st.title,
+          isCompleted: st.isCompleted ?? false,
+          taskId: id,
+        },
+      });
+    }
+  }
+
+  // 4. Update the parent task
+  await prisma.task.update({
+    where: { id },
+    data: {
+      title: data.title,
+      description: data.description,
+      amount: data.amount,
+      deadline: data.deadline ? new Date(data.deadline) : null,
+      categoryId: data.categoryId,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}/edit`);
 }
 
 export async function toggleTask(id: string, isCompleted: boolean) {

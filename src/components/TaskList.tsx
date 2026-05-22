@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { toggleTask, toggleSubTask, deleteTask } from "@/lib/actions";
-import { CheckSquare, Square, Calendar, DollarSign, Trash2, ChevronDown, ChevronUp, Folder, CheckCircle } from "lucide-react";
+import { CheckSquare, Square, Calendar, DollarSign, Trash2, ChevronDown, ChevronUp, Folder, CheckCircle, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface SubTask {
   id: string;
@@ -231,10 +232,16 @@ export default function TaskList({ initialTasks, categories }: TaskListProps) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 sm:opacity-100 transition-all">
+                      <Link
+                        href={`/tasks/${task.id}/edit`}
+                        className="text-text-muted hover:text-primary p-2 rounded-lg hover:bg-surface transition-all"
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </Link>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="text-text-muted hover:text-red-500 p-2 rounded-lg hover:bg-surface transition-all opacity-0 group-hover:opacity-100 sm:opacity-100"
+                        className="text-text-muted hover:text-red-500 p-2 rounded-lg hover:bg-surface transition-all"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
