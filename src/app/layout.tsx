@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.className} bg-background text-text-main flex flex-col md:flex-row min-h-screen`}>
         <Navigation />
 

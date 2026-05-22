@@ -39,10 +39,21 @@ export default function EditTaskForm({ task, categories }: EditTaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Format task deadline for HTML input: YYYY-MM-DD
-  const formattedDeadline = task.deadline
-    ? new Date(task.deadline).toISOString().split("T")[0]
-    : "";
+  // Format task deadline for HTML input: YYYY-MM-DD (Vietnam timezone)
+  const formattedDeadline = (() => {
+    if (!task.deadline) return "";
+    const d = new Date(task.deadline);
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(d);
+    const year = parts.find(p => p.type === "year")?.value;
+    const month = parts.find(p => p.type === "month")?.value;
+    const day = parts.find(p => p.type === "day")?.value;
+    return `${year}-${month}-${day}`;
+  })();
 
   // Subtasks state: holds both existing subtasks (with id) and new subtasks (without id)
   const [subTasks, setSubTasks] = useState<SubTaskInput[]>(

@@ -120,7 +120,7 @@ export async function createTask(data: {
       title: data.title,
       description: data.description,
       amount: data.amount,
-      deadline: data.deadline ? new Date(data.deadline) : null,
+      deadline: data.deadline ? new Date(data.deadline + "T00:00:00+07:00") : null,
       categoryId: data.categoryId,
       subTasks: {
         create: data.subTasks.filter(t => t.trim() !== "").map(title => ({
@@ -186,7 +186,7 @@ export async function updateTask(
       title: data.title,
       description: data.description,
       amount: data.amount,
-      deadline: data.deadline ? new Date(data.deadline) : null,
+      deadline: data.deadline ? new Date(data.deadline + "T00:00:00+07:00") : null,
       categoryId: data.categoryId,
     },
   });

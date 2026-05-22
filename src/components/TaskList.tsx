@@ -187,7 +187,7 @@ export default function TaskList({ initialTasks, categories }: TaskListProps) {
                         {task.deadline && (
                           <span className="flex items-center gap-1 text-xs text-text-muted" suppressHydrationWarning>
                             <Calendar className="w-3.5 h-3.5" />
-                            {new Date(task.deadline).toLocaleDateString("vi-VN")}
+                            {new Date(task.deadline).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
                           </span>
                         )}
 
