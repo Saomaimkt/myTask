@@ -32,12 +32,14 @@ export default async function CategoriesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.map((category) => {
-            const spent = category.tasks.reduce((sum, task) => sum + task.amount, 0);
+            const estimatedSpent = category.tasks.reduce((sum, task) => sum + task.estimatedAmount, 0);
+            const actualSpent = category.tasks.reduce((sum, task) => sum + task.actualAmount, 0);
             const percentage = category.budgetLimit > 0 
-              ? Math.min((spent / category.budgetLimit) * 100, 100) 
+              ? Math.min((actualSpent / category.budgetLimit) * 100, 100) 
               : 0;
 
-            const isOverBudget = spent > category.budgetLimit && category.budgetLimit > 0;
+            const isOverBudget = actualSpent > category.budgetLimit && category.budgetLimit > 0;
+            const isActualOverEstimated = actualSpent > estimatedSpent && estimatedSpent > 0;
 
             return (
               <div
@@ -82,14 +84,20 @@ export default async function CategoriesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-6">
+                <div className="grid grid-cols-3 gap-4 mt-6">
                   <div>
-                    <span className="text-sm text-text-muted block">Đã chi</span>
-                    <span className="text-lg font-semibold">{spent.toLocaleString("vi-VN")} ₫</span>
+                    <span className="text-xs text-text-muted block mb-1">Dự kiến chi</span>
+                    <span className="text-base font-semibold">{estimatedSpent.toLocaleString("vi-VN")} ₫</span>
                   </div>
                   <div>
-                    <span className="text-sm text-text-muted block">Ngân sách giới hạn</span>
-                    <span className="text-lg font-semibold">
+                    <span className="text-xs text-text-muted block mb-1">Đã chi (Thực tế)</span>
+                    <span className={`text-base font-semibold ${isActualOverEstimated ? "text-red-500" : ""}`}>
+                      {actualSpent.toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-text-muted block mb-1">Ngân sách giới hạn</span>
+                    <span className="text-base font-semibold">
                       {category.budgetLimit > 0
                         ? `${category.budgetLimit.toLocaleString("vi-VN")} ₫`
                         : "Vô hạn"}
@@ -113,7 +121,7 @@ export default async function CategoriesPage() {
                         {isOverBudget ? "Vượt ngân sách!" : `${percentage.toFixed(0)}% đã dùng`}
                       </span>
                       <span className="text-text-muted">
-                        Còn lại: {Math.max(0, category.budgetLimit - spent).toLocaleString("vi-VN")} ₫
+                        Còn lại: {Math.max(0, category.budgetLimit - actualSpent).toLocaleString("vi-VN")} ₫
                       </span>
                     </div>
                   </div>

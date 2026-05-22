@@ -83,6 +83,77 @@ export async function deleteCategory(id: string) {
   revalidatePath("/categories");
 }
 
+// --- MEMBERS ---
+
+export async function getMembers() {
+  return await prisma.member.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      assignedTasks: true,
+      relatedTasks: true,
+    },
+  });
+}
+
+export async function getMember(id: string) {
+  return await prisma.member.findFirst({
+    where: { id },
+  });
+}
+
+export async function createMember(formData: FormData) {
+  const name = formData.get("name") as string;
+  const role = formData.get("role") as string || null;
+  const color = formData.get("color") as string || "#6366f1";
+
+  if (!name) return { error: "Tên nhân sự không được để trống" };
+
+  await prisma.member.create({
+    data: {
+      name,
+      role,
+      color,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/members");
+  revalidatePath("/tasks/new");
+}
+
+export async function updateMember(id: string, formData: FormData) {
+  const name = formData.get("name") as string;
+  const role = formData.get("role") as string || null;
+  const color = formData.get("color") as string || "#6366f1";
+
+  if (!name) return { error: "Tên nhân sự không được để trống" };
+
+  await prisma.member.update({
+    where: { id },
+    data: {
+      name,
+      role,
+      color,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/members");
+  revalidatePath(`/members/${id}/edit`);
+  revalidatePath("/tasks");
+}
+
+export async function deleteMember(id: string) {
+  // SQLite with SetNull will detach tasks automatically from this member
+  await prisma.member.delete({
+    where: { id },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/members");
+  revalidatePath("/tasks");
+}
+
 // --- TASKS ---
 
 export async function getTasks() {
@@ -90,6 +161,8 @@ export async function getTasks() {
     orderBy: { createdAt: "desc" },
     include: {
       category: true,
+      assignees: true,
+      relatedMembers: true,
       subTasks: true,
     },
   });
@@ -99,6 +172,9 @@ export async function getTask(id: string) {
   return await prisma.task.findFirst({
     where: { id },
     include: {
+      category: true,
+      assignees: true,
+      relatedMembers: true,
       subTasks: true,
     },
   });
@@ -107,9 +183,12 @@ export async function getTask(id: string) {
 export async function createTask(data: {
   title: string;
   description?: string;
-  amount: number;
+  estimatedAmount: number;
+  actualAmount: number;
   deadline?: string;
   categoryId: string;
+  assigneeIds: string[];
+  relatedMemberIds: string[];
   subTasks: string[];
 }) {
   if (!data.title) return { error: "Tiêu đề công việc không được để trống" };
@@ -119,9 +198,16 @@ export async function createTask(data: {
     data: {
       title: data.title,
       description: data.description,
-      amount: data.amount,
+      estimatedAmount: data.estimatedAmount,
+      actualAmount: data.actualAmount,
       deadline: data.deadline ? new Date(data.deadline + "T00:00:00+07:00") : null,
       categoryId: data.categoryId,
+      assignees: {
+        connect: data.assigneeIds.map(id => ({ id })),
+      },
+      relatedMembers: {
+        connect: data.relatedMemberIds.map(id => ({ id })),
+      },
       subTasks: {
         create: data.subTasks.filter(t => t.trim() !== "").map(title => ({
           title,
@@ -139,9 +225,12 @@ export async function updateTask(
   data: {
     title: string;
     description?: string;
-    amount: number;
+    estimatedAmount: number;
+    actualAmount: number;
     deadline?: string;
     categoryId: string;
+    assigneeIds: string[];
+    relatedMemberIds: string[];
     subTasks: { id?: string; title: string; isCompleted?: boolean }[];
   }
 ) {
@@ -185,9 +274,16 @@ export async function updateTask(
     data: {
       title: data.title,
       description: data.description,
-      amount: data.amount,
+      estimatedAmount: data.estimatedAmount,
+      actualAmount: data.actualAmount,
       deadline: data.deadline ? new Date(data.deadline + "T00:00:00+07:00") : null,
       categoryId: data.categoryId,
+      assignees: {
+        set: data.assigneeIds.map(id => ({ id })),
+      },
+      relatedMembers: {
+        set: data.relatedMemberIds.map(id => ({ id })),
+      },
     },
   });
 

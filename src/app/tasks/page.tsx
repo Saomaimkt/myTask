@@ -1,12 +1,13 @@
-import { getTasks, getCategories } from "@/lib/actions";
+import { getTasks, getCategories, getMembers } from "@/lib/actions";
 import TaskList from "@/components/TaskList";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
 export default async function TasksPage() {
-  const [tasks, categories] = await Promise.all([
+  const [tasks, categories, members] = await Promise.all([
     getTasks(),
     getCategories(),
+    getMembers(),
   ]);
 
   // Map category object shape for type safety
@@ -16,11 +17,18 @@ export default async function TasksPage() {
     color: c.color,
   }));
 
+  const formattedMembers = members.map(m => ({
+    id: m.id,
+    name: m.name,
+    color: m.color,
+  }));
+
   const formattedTasks = tasks.map(t => ({
     id: t.id,
     title: t.title,
     description: t.description,
-    amount: t.amount,
+    estimatedAmount: t.estimatedAmount,
+    actualAmount: t.actualAmount,
     deadline: t.deadline,
     isCompleted: t.isCompleted,
     categoryId: t.categoryId,
@@ -29,6 +37,8 @@ export default async function TasksPage() {
       name: t.category.name,
       color: t.category.color,
     },
+    assignees: t.assignees.map(a => ({ id: a.id, name: a.name, color: a.color })),
+    relatedMembers: t.relatedMembers.map(m => ({ id: m.id, name: m.name, color: m.color })),
     subTasks: t.subTasks.map(st => ({
       id: st.id,
       title: st.title,
@@ -52,7 +62,7 @@ export default async function TasksPage() {
         </Link>
       </div>
 
-      <TaskList initialTasks={formattedTasks} categories={formattedCategories} />
+      <TaskList initialTasks={formattedTasks} categories={formattedCategories} members={formattedMembers} />
     </div>
   );
 }

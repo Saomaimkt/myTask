@@ -3,19 +3,26 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions";
-import { ArrowLeft, Plus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Loader2, GripVertical } from "lucide-react";
 import Link from "next/link";
+import RichTextEditor from "./RichTextEditor";
 
 interface Category {
   id: string;
   name: string;
 }
 
-interface TaskFormProps {
-  categories: Category[];
+interface Member {
+  id: string;
+  name: string;
 }
 
-export default function TaskForm({ categories }: TaskFormProps) {
+interface TaskFormProps {
+  categories: Category[];
+  members: Member[];
+}
+
+export default function TaskForm({ categories, members }: TaskFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +30,17 @@ export default function TaskForm({ categories }: TaskFormProps) {
   // Subtasks state
   const [subTasks, setSubTasks] = useState<string[]>([]);
   const [newSubTaskTitle, setNewSubTaskTitle] = useState("");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [relatedMemberIds, setRelatedMemberIds] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+
+  const toggleAssignee = (id: string) => {
+    setAssigneeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleRelated = (id: string) => {
+    setRelatedMemberIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   const handleAddSubTask = () => {
     if (newSubTaskTitle.trim() === "") return;
@@ -41,15 +59,39 @@ export default function TaskForm({ categories }: TaskFormProps) {
     }
   };
 
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); // Necessary to allow dropping
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newSubTasks = [...subTasks];
+    const [draggedItem] = newSubTasks.splice(draggedIndex, 1);
+    newSubTasks.splice(index, 0, draggedItem);
+    setSubTasks(newSubTasks);
+    setDraggedIndex(null);
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError("");
 
     const formData = new FormData(event.currentTarget);
+    formData.append("assigneeIds", JSON.stringify(assigneeIds));
+    formData.append("relatedMemberIds", JSON.stringify(relatedMemberIds));
+
     const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const amount = parseFloat(formData.get("amount") as string) || 0;
+    const estimatedAmount = parseFloat(formData.get("estimatedAmount") as string) || 0;
+    const actualAmount = parseFloat(formData.get("actualAmount") as string) || 0;
     const deadline = formData.get("deadline") as string;
     const categoryId = formData.get("categoryId") as string;
 
@@ -57,9 +99,12 @@ export default function TaskForm({ categories }: TaskFormProps) {
       const res = await createTask({
         title,
         description,
-        amount,
+        estimatedAmount,
+        actualAmount,
         deadline,
         categoryId,
+        assigneeIds,
+        relatedMemberIds,
         subTasks,
       });
 
@@ -113,51 +158,116 @@ export default function TaskForm({ categories }: TaskFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium text-text-muted">
+          <label className="text-sm font-medium text-text-muted">
             Mô tả công việc
           </label>
-          <textarea
-            id="description"
-            name="description"
-            placeholder="Mô tả ngắn gọn nội dung công việc..."
-            rows={3}
-            className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main resize-none"
+          <RichTextEditor
+            content={description}
+            onChange={setDescription}
+            placeholder="Mô tả chi tiết nội dung công việc..."
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="categoryId" className="text-sm font-medium text-text-muted">
-              Hạng mục liên kết <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="categoryId"
-              name="categoryId"
-              required
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main"
-            >
-              <option value="">Chọn hạng mục...</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="categoryId" className="text-sm font-medium text-text-muted">
+                Hạng mục liên kết <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                required
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main"
+              >
+                <option value="">Chọn hạng mục...</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="estimatedAmount" className="text-sm font-medium text-text-muted">
+                Ngân sách dự kiến (VNĐ) <span className="text-text-muted text-xs">(Nếu có)</span>
+              </label>
+              <input
+                type="number"
+                id="estimatedAmount"
+                name="estimatedAmount"
+                placeholder="0"
+                min="0"
+                defaultValue="0"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="actualAmount" className="text-sm font-medium text-text-muted">
+                Thực chi (VNĐ) <span className="text-text-muted text-xs">(Nếu có)</span>
+              </label>
+              <input
+                type="number"
+                id="actualAmount"
+                name="actualAmount"
+                placeholder="0"
+                min="0"
+                defaultValue="0"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="amount" className="text-sm font-medium text-text-muted">
-              Chi phí dự kiến (VNĐ) <span className="text-text-muted text-xs">(Nếu có)</span>
-            </label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              placeholder="0"
-              min="0"
-              defaultValue="0"
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors text-text-main"
-            />
+          <div className="space-y-4 bg-surface/30 p-4 rounded-xl border border-border/50">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-muted">
+                Người phụ trách
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {members.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => toggleAssignee(m.id)}
+                    className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                      assigneeIds.includes(m.id)
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'
+                        : 'bg-surface border-border text-text-muted hover:border-primary/50'
+                    }`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+                {members.length === 0 && (
+                  <span className="text-sm text-text-muted italic">Chưa có nhân sự nào.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-muted">
+                Người liên quan
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {members.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => toggleRelated(m.id)}
+                    className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                      relatedMemberIds.includes(m.id)
+                        ? 'bg-blue-500/10 border-blue-500/50 text-blue-500'
+                        : 'bg-surface border-border text-text-muted hover:border-primary/50'
+                    }`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+                {members.length === 0 && (
+                  <span className="text-sm text-text-muted italic">Chưa có nhân sự nào.</span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -201,8 +311,21 @@ export default function TaskForm({ categories }: TaskFormProps) {
           {subTasks.length > 0 && (
             <div className="bg-surface/30 border border-border/50 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto">
               {subTasks.map((title, index) => (
-                <div key={index} className="flex justify-between items-center bg-surface px-4 py-2.5 rounded-xl border border-border/30">
-                  <span className="text-sm text-text-main break-all">{title}</span>
+                <div 
+                  key={index}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={() => setDraggedIndex(null)}
+                  className={`flex justify-between items-center bg-surface px-4 py-2.5 rounded-xl border border-border/30 cursor-grab active:cursor-grabbing transition-all ${
+                    draggedIndex === index ? 'opacity-50 border-dashed border-primary scale-[0.98]' : 'hover:border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <GripVertical className="w-4 h-4 text-text-muted/50" />
+                    <span className="text-sm text-text-main break-all">{title}</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveSubTask(index)}

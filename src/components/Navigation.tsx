@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListTodo, Wallet } from "lucide-react";
+import { LayoutDashboard, ListTodo, Wallet, Users } from "lucide-react";
 
 const NAV_ITEMS = [
   {
@@ -25,6 +25,13 @@ const NAV_ITEMS = [
     icon: Wallet,
     colorClass: "text-accent",
     activeClass: "bg-accent/10 text-accent border-accent",
+  },
+  {
+    href: "/members",
+    label: "Nhân sự",
+    icon: Users,
+    colorClass: "text-[#10b981]", // Emerald color
+    activeClass: "bg-[#10b981]/10 text-[#10b981] border-[#10b981]",
   },
 ];
 

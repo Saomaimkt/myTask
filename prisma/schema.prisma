@@ -21,17 +21,30 @@ model Category {
   createdAt   DateTime @default(now())
 }
 
+model Member {
+  id            String   @id @default(uuid())
+  name          String
+  role          String?
+  color         String
+  assignedTasks Task[]   @relation("TaskAssignees")
+  relatedTasks  Task[]   @relation("TaskRelatedMembers")
+  createdAt     DateTime @default(now())
+}
+
 model Task {
-  id          String     @id @default(uuid())
-  title       String
-  description String?
-  amount      Float      @default(0)
-  deadline    DateTime?
-  isCompleted Boolean    @default(false)
-  categoryId  String
-  category    Category   @relation(fields: [categoryId], references: [id])
-  subTasks    SubTask[]
-  createdAt   DateTime   @default(now())
+  id              String     @id @default(uuid())
+  title           String
+  description     String?
+  estimatedAmount Float      @default(0) @map("amount")
+  actualAmount    Float      @default(0)
+  deadline        DateTime?
+  isCompleted     Boolean    @default(false)
+  categoryId      String
+  category        Category   @relation(fields: [categoryId], references: [id])
+  assignees       Member[]   @relation("TaskAssignees")
+  relatedMembers  Member[]   @relation("TaskRelatedMembers")
+  subTasks        SubTask[]
+  createdAt       DateTime   @default(now())
 }
 
 model SubTask {

@@ -25,12 +25,14 @@ export default async function Home() {
 
   // Calculations
   const totalBudget = categories.reduce((sum, c) => sum + c.budgetLimit, 0);
-  const totalSpent = tasks.reduce((sum, t) => sum + t.amount, 0);
+  const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimatedAmount || 0), 0);
+  const totalActual = tasks.reduce((sum, t) => sum + (t.actualAmount || 0), 0);
 
   // Pie Chart Data: Spent per Category
   const pieData = categories.map((c) => ({
     name: c.name,
-    value: c.tasks.reduce((sum, t) => sum + t.amount, 0),
+    value: c.tasks.reduce((sum, t) => sum + (t.actualAmount || 0), 0),
+    estimated: c.tasks.reduce((sum, t) => sum + (t.estimatedAmount || 0), 0),
     color: c.color,
   }));
 
@@ -48,6 +50,7 @@ export default async function Home() {
       year: d.getFullYear(),
       name: `${monthNames[d.getMonth()]}`,
       spent: 0,
+      estimated: 0,
     };
   });
 
@@ -58,13 +61,15 @@ export default async function Home() {
 
     const bucket = last6Months.find(m => m.month === taskMonth && m.year === taskYear);
     if (bucket) {
-      bucket.spent += task.amount;
+      bucket.spent += (task.actualAmount || 0);
+      bucket.estimated += (task.estimatedAmount || 0);
     }
   });
 
   const barData = last6Months.map((m) => ({
     name: m.name,
     spent: m.spent,
+    estimated: m.estimated,
   }));
 
   return (
@@ -110,11 +115,12 @@ export default async function Home() {
             <Wallet className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-text-muted">Ngân sách đã chi</h3>
-            <p className="text-3xl font-bold mt-1 text-accent">{totalSpent.toLocaleString("vi-VN")} ₫</p>
-            <p className="text-xs text-text-muted mt-2">
-              Tổng hạn mức: {totalBudget > 0 ? `${totalBudget.toLocaleString("vi-VN")} ₫` : "Không giới hạn"}
-            </p>
+            <h3 className="text-sm font-medium text-text-muted">Ngân sách</h3>
+            <p className="text-3xl font-bold mt-1 text-accent">{totalActual.toLocaleString("vi-VN")} ₫</p>
+            <div className="text-xs text-text-muted mt-2 space-y-0.5">
+              <p>Dự kiến: {totalEstimated.toLocaleString("vi-VN")} ₫</p>
+              <p>Hạn mức: {totalBudget > 0 ? `${totalBudget.toLocaleString("vi-VN")} ₫` : "Không giới hạn"}</p>
+            </div>
           </div>
         </div>
       </div>

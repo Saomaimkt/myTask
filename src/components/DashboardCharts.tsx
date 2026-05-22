@@ -18,12 +18,14 @@ import {
 interface PieData {
   name: string;
   value: number;
+  estimated: number;
   color: string;
 }
 
 interface BarData {
   name: string;
   spent: number;
+  estimated: number;
 }
 
 interface DashboardChartsProps {
@@ -51,8 +53,8 @@ export default function DashboardCharts({ pieData, barData }: DashboardChartsPro
     );
   }
 
-  const hasPieData = pieData.some(d => d.value > 0);
-  const hasBarData = barData.some(d => d.spent > 0);
+  const hasPieData = pieData.some(d => d.value > 0 || d.estimated > 0);
+  const hasBarData = barData.some(d => d.spent > 0 || d.estimated > 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -81,7 +83,10 @@ export default function DashboardCharts({ pieData, barData }: DashboardChartsPro
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`, "Đã chi"]}
+                  formatter={(value: any, name: any) => [
+                    `${Number(value).toLocaleString("vi-VN")} ₫`, 
+                    name === "value" ? "Thực chi" : "Dự kiến"
+                  ]}
                   contentStyle={{ backgroundColor: "#1e2130", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }}
                 />
                 <Legend />
@@ -112,10 +117,14 @@ export default function DashboardCharts({ pieData, barData }: DashboardChartsPro
                   tickFormatter={(val) => `${(val / 1000).toLocaleString("vi-VN")}k`}
                 />
                 <Tooltip
-                  formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`, "Chi tiêu"]}
+                  formatter={(value: any, name: any) => [
+                    `${Number(value).toLocaleString("vi-VN")} ₫`, 
+                    name === "spent" ? "Thực chi" : "Dự kiến"
+                  ]}
                   contentStyle={{ backgroundColor: "#1e2130", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }}
                 />
-                <Bar dataKey="spent" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="estimated" fill="#94a3b8" radius={[4, 4, 0, 0]} name="Dự kiến" />
+                <Bar dataKey="spent" fill="#6366f1" radius={[4, 4, 0, 0]} name="Thực chi" />
               </BarChart>
             </ResponsiveContainer>
           )}

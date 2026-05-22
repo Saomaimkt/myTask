@@ -1,4 +1,4 @@
-import { getTask, getCategories } from "@/lib/actions";
+import { getTask, getCategories, getMembers } from "@/lib/actions";
 import EditTaskForm from "@/components/EditTaskForm";
 import { notFound } from "next/navigation";
 
@@ -10,9 +10,10 @@ interface PageProps {
 
 export default async function EditTaskPage({ params }: PageProps) {
   const { id } = await params;
-  const [task, categories] = await Promise.all([
+  const [task, categories, members] = await Promise.all([
     getTask(id),
     getCategories(),
+    getMembers(),
   ]);
 
   if (!task) {
@@ -28,9 +29,12 @@ export default async function EditTaskPage({ params }: PageProps) {
     id: task.id,
     title: task.title,
     description: task.description,
-    amount: task.amount,
+    estimatedAmount: task.estimatedAmount,
+    actualAmount: task.actualAmount,
     deadline: task.deadline,
     categoryId: task.categoryId,
+    assignees: task.assignees.map(a => ({ id: a.id, name: a.name, color: a.color })),
+    relatedMembers: task.relatedMembers.map(m => ({ id: m.id, name: m.name, color: m.color })),
     subTasks: task.subTasks.map(st => ({
       id: st.id,
       title: st.title,
@@ -38,5 +42,10 @@ export default async function EditTaskPage({ params }: PageProps) {
     })),
   };
 
-  return <EditTaskForm task={formattedTask} categories={formattedCategories} />;
+  const formattedMembers = members.map(m => ({
+    id: m.id,
+    name: m.name,
+  }));
+
+  return <EditTaskForm task={formattedTask} categories={formattedCategories} members={formattedMembers} />;
 }
