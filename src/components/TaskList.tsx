@@ -232,7 +232,7 @@ export default function TaskList({ initialTasks, categories }: TaskListProps) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-all">
+                    <div className="flex items-center gap-1 opacity-100 transition-all">
                       <Link
                         href={`/tasks/${task.id}/edit`}
                         className="text-text-muted hover:text-primary p-2 rounded-lg hover:bg-surface transition-all"
